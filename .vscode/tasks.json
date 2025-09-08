@@ -1,0 +1,41 @@
+{
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "Build MPI Solver",
+            "command": "make",
+            "args": ["all"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "type": "shell",
+            "label": "Run MPI Solver (4 processes)",
+            "command": "make",
+            "args": ["run"],
+            "group": "test",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOn": "Build MPI Solver"
+        },
+        {
+            "type": "shell",
+            "label": "Run MPI Solver (single process)",
+            "command": "make",
+            "args": ["run-single"],
+            "group": "test",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOn": "Build MPI Solver"
+        }
+    ],
+    "version": "2.0.0"
+}

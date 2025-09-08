@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug MPI Solver (Single Process)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/inverse_laplace_solver",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb",
+            "preLaunchTask": "Build MPI Solver"
+        }
+    ]
+}

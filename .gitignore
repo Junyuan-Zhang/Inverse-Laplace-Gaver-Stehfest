@@ -1,0 +1,37 @@
+# Compiled executables
+inverse_laplace_solver
+*.o
+*.out
+*.exe
+
+# Debug builds
+*_debug
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files (keep VS Code config but ignore user-specific settings)
+.vscode/settings.json
+
+# Build artifacts
+build/
+dist/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Log files
+*.log
+
+# Core dumps
+core.*
