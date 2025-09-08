@@ -1,8 +1,12 @@
 # Compiled executables
 inverse_laplace_solver
 *.o
+*.obj
 *.out
 *.exe
+*.a
+*.so
+*.dylib
 
 # Debug builds
 *_debug
