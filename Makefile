@@ -12,7 +12,7 @@ LDFLAGS = -L$(GMP_LIB) $(LIBS)
 
 # Target executable
 TARGET = inverse_laplace_solver
-OBJECTS = main.o solver.o
+OBJECTS = main.o solver.o custom_function.o
 
 .PHONY: all clean run run-single run-parallel help
 
@@ -25,6 +25,9 @@ main.o: main.cpp solver.h
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 solver.o: solver.cpp solver.h
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+custom_function.o: custom_function.cpp custom_function.h solver.h
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 run: $(TARGET)

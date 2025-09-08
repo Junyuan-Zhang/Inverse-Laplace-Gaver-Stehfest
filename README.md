@@ -95,7 +95,7 @@ Running on 4 MPI processes
 1. Default Example: (5*s^2 - 15*s + 7) / ((s+1)*(s-2)^3)
 2. Exponential Decay: 1/(s+a) -> exp(-a*t)
 3. Step Function: 1/s -> 1
-4. Custom Function (you define F(s) mathematically)
+4. Custom Function (defined in custom_function.cpp)
 ```
 
 ### Function Types
@@ -117,9 +117,120 @@ Running on 4 MPI processes
 - **Use Case**: Basic step response analysis
 
 #### 4. Custom Function
-- **User-Defined**: Enter your own mathematical expression
-- **Limitations**: Basic expression parser (extensible)
-- **Use Case**: Research applications with specific functions
+- **Definition**: Define your own functions in `custom_function.cpp`
+- **Flexibility**: Full mathematical expression support with GMP precision
+- **Analytical Support**: Optional analytical solution for verification
+- **Use Case**: Research, education, and specialized applications
+
+## 🛠️ Custom Function Development
+
+### Quick Start with Custom Functions
+
+1. **Edit the Function File**:
+   ```bash
+   # Open the custom function file
+   nano custom_function.cpp  # or use your preferred editor
+   ```
+
+2. **Define Your Function**:
+   ```cpp
+   // Example: F(s) = 1/(s+3) -> f(t) = exp(-3*t)
+   mpf_class custom_target_function(const mpf_class& s) {
+       return mpf_class(1.0) / (s + mpf_class(3.0));
+   }
+   
+   mpf_class custom_analytical_function(const mpf_class& t) {
+       // Taylor series for exp(-3*t)
+       mpf_class x = mpf_class(-3.0) * t;
+       mpf_class result(1.0);
+       mpf_class term(1.0);
+       
+       for (int i = 1; i <= 50; i++) {
+           term = term * x / mpf_class(i);
+           result += term;
+       }
+       return result;
+   }
+   ```
+
+3. **Set Analytical Solution Flag**:
+   ```cpp
+   const bool HAS_ANALYTICAL_SOLUTION = true;  // Set to false if no analytical solution
+   ```
+
+4. **Compile and Run**:
+   ```bash
+   make all
+   mpirun -np 1 ./inverse_laplace_solver
+   # Select option 4 (Custom Function)
+   ```
+
+### Mathematical Operations Reference
+
+The custom function system supports full GMP arithmetic operations:
+
+```cpp
+// Basic Operations
+mpf_class a(5.0), b(3.0);
+mpf_class sum = a + b;           // Addition
+mpf_class diff = a - b;          // Subtraction  
+mpf_class product = a * b;       // Multiplication
+mpf_class quotient = a / b;      // Division
+
+// Advanced Operations
+mpf_class power_result;
+mpf_pow_ui(power_result.get_mpf_t(), a.get_mpf_t(), 3);  // a^3
+
+mpf_class sqrt_result = sqrt(a);  // Square root
+mpf_class abs_result = abs(a);    // Absolute value
+
+// Complex Expressions
+mpf_class s2 = s * s;            // s^2
+mpf_class numerator = mpf_class(5.0) * s2 - mpf_class(3.0) * s + mpf_class(7.0);
+mpf_class denominator = (s + mpf_class(1.0)) * (s - mpf_class(2.0));
+return numerator / denominator;
+```
+
+### Example Custom Functions
+
+#### Example 1: Second-Order System
+```cpp
+// F(s) = ωn² / (s² + 2ζωn*s + ωn²)
+mpf_class custom_target_function(const mpf_class& s) {
+    mpf_class omega_n(5.0);    // Natural frequency
+    mpf_class zeta(0.7);       // Damping ratio
+    
+    mpf_class s2 = s * s;
+    mpf_class omega_n2 = omega_n * omega_n;
+    mpf_class two_zeta_omega_n = mpf_class(2.0) * zeta * omega_n;
+    
+    mpf_class numerator = omega_n2;
+    mpf_class denominator = s2 + two_zeta_omega_n * s + omega_n2;
+    
+    return numerator / denominator;
+}
+```
+
+#### Example 2: Time-Delayed System  
+```cpp
+// F(s) = exp(-s*τ) / (s+a) where τ is delay time
+mpf_class custom_target_function(const mpf_class& s) {
+    mpf_class tau(2.0);        // Delay time
+    mpf_class a(1.0);          // Decay constant
+    
+    // Taylor approximation for exp(-s*τ)
+    mpf_class x = -s * tau;
+    mpf_class exp_term(1.0);
+    mpf_class term(1.0);
+    
+    for (int i = 1; i <= 30; i++) {
+        term = term * x / mpf_class(i);
+        exp_term += term;
+    }
+    
+    return exp_term / (s + a);
+}
+```
 
 ### Configuration Parameters
 

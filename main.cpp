@@ -1,4 +1,5 @@
 #include "solver.h"
+#include "custom_function.h"
 #include <mpi.h>
 #include <iostream>
 #include <iomanip>
@@ -17,51 +18,11 @@ void print_help() {
     std::cout << "1. Default Example: (5*s^2 - 15*s + 7) / ((s+1)*(s-2)^3)" << std::endl;
     std::cout << "2. Exponential Decay: 1/(s+a) -> exp(-a*t)" << std::endl;
     std::cout << "3. Step Function: 1/s -> 1" << std::endl;
-    std::cout << "4. Custom Function (you define F(s) mathematically)" << std::endl;
+    std::cout << "4. Custom Function (defined in custom_function.cpp)" << std::endl;
     std::cout << "\n=== Parameters ===" << std::endl;
     std::cout << "- n: Number of terms in summation (higher = more accurate, slower)" << std::endl;
     std::cout << "- t_range: Range of t values to compute (log scale)" << std::endl;
     std::cout << "- precision: Decimal precision for GMP calculations" << std::endl;
-}
-
-mpf_class parse_expression(const std::string& expr, const mpf_class& s) {
-    // Simple expression parser for basic mathematical operations
-    // This is a simplified parser - in production, you'd use a proper math expression library
-    
-    if (expr == "1/s") {
-        return mpf_class(1.0) / s;
-    } else if (expr.find("1/(s+") != std::string::npos) {
-        // Extract the constant a from 1/(s+a)
-        size_t pos = expr.find("1/(s+");
-        size_t end = expr.find(")", pos);
-        std::string a_str = expr.substr(pos + 5, end - pos - 5);
-        double a = std::stod(a_str);
-        return mpf_class(1.0) / (s + mpf_class(a));
-    } else if (expr.find("s^") != std::string::npos) {
-        // Handle polynomial expressions (simplified)
-        // This is a basic implementation - extend as needed
-        return s; // Placeholder
-    }
-    
-    // Default: return s for testing
-    return s;
-}
-
-std::function<mpf_class(const mpf_class&)> create_custom_function() {
-    std::cout << "\n=== Custom Function Definition ===" << std::endl;
-    std::cout << "Enter your function F(s) in Laplace domain." << std::endl;
-    std::cout << "Examples:" << std::endl;
-    std::cout << "  1/s" << std::endl;
-    std::cout << "  1/(s+2)" << std::endl;
-    std::cout << "  (5*s^2-15*s+7)/((s+1)*(s-2)^3)" << std::endl;
-    std::cout << "\nEnter F(s): ";
-    
-    std::string expression;
-    std::getline(std::cin, expression);
-    
-    return [expression](const mpf_class& s) -> mpf_class {
-        return parse_expression(expression, s);
-    };
 }
 
 int main(int argc, char* argv[]) {
@@ -167,13 +128,17 @@ int main(int argc, char* argv[]) {
                 break;
                 
             case 4: // Custom function
+                solver.set_target_function(custom_target_function);
+                if (HAS_ANALYTICAL_SOLUTION && use_analytical) {
+                    solver.set_analytical_solution(custom_analytical_function);
+                }
                 if (rank == 0) {
-                    auto custom_func = create_custom_function();
-                    solver.set_target_function(custom_func);
-                    std::cout << "Using custom function (no analytical solution)" << std::endl;
-                } else {
-                    // For non-master processes, use default function as placeholder
-                    solver.set_target_function(ExampleFunctions::default_target_function);
+                    std::cout << "Using custom function from custom_function.cpp" << std::endl;
+                    if (HAS_ANALYTICAL_SOLUTION) {
+                        std::cout << "Analytical solution: Available for verification" << std::endl;
+                    } else {
+                        std::cout << "Analytical solution: Not provided" << std::endl;
+                    }
                 }
                 break;
                 
