@@ -6,6 +6,7 @@
 #include <functional>
 #include <string>
 #include <cmath>
+#include <fstream>
 #include <gmp.h>
 #include <gmpxx.h>
 
@@ -71,6 +72,9 @@ public:
     
     // Print results in formatted table
     void print_results(const SolverResults& results, int num_samples = 10);
+    
+    // Write results to a text file
+    void write_results_to_file(const SolverResults& results, const std::string& filename);
     
     // Get MPI rank and size
     int get_mpi_rank() const { return mpi_rank; }

@@ -214,6 +214,18 @@ int main(int argc, char* argv[]) {
             
             solver.print_results(results, 15);
             
+            // Ask user if they want to save results to a file
+            std::cout << "\nDo you want to save results to a text file? (y/n): ";
+            char save_choice;
+            std::cin >> save_choice;
+            
+            if (save_choice == 'y' || save_choice == 'Y') {
+                // Generate default filename with timestamp
+                std::string filename = "inverse_laplace_results.txt";
+                std::cout << "Saving results to: " << filename << std::endl;
+                solver.write_results_to_file(results, filename);
+            }
+            
             std::cout << "\n=== Summary ===" << std::endl;
             std::cout << "Successfully computed " << t_values.size() << " points" << std::endl;
             std::cout << "Used " << n << " terms in the summation" << std::endl;
