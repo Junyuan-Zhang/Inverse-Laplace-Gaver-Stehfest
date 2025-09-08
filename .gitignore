@@ -8,6 +8,10 @@ inverse_laplace_solver
 *.so
 *.dylib
 
+# Generated output files
+*.txt
+inverse_laplace_results.*
+
 # Debug builds
 *_debug
 
