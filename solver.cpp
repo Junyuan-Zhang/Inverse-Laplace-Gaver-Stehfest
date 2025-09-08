@@ -103,16 +103,22 @@ mpf_class InverseLaplaceSolver::inverse_laplace_transform(int n, const mpf_class
         local_sum += vi_val * target_val;
     }
     
-    // Reduce all partial sums
+    // Reduce all partial sums - FIXED: Use master-only computation to avoid precision loss
     mpf_class global_sum(0.0);
     
-    // Convert mpf_class to double for MPI communication
-    double local_sum_double = local_sum.get_d();
-    double global_sum_double;
+    if (mpi_rank == 0) {
+        // Master process calculates everything to maintain precision
+        for (int i = 1; i <= n; i++) {
+            mpf_class arg = mpf_class(i) * ln2 / t;
+            mpf_class vi_val = Vi(n, i);
+            mpf_class target_val = target_function(arg);
+            
+            global_sum += vi_val * target_val;
+        }
+    }
     
-    MPI_Allreduce(&local_sum_double, &global_sum_double, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    
-    global_sum = mpf_class(global_sum_double);
+    // Note: For now we sacrifice parallelization to maintain numerical accuracy
+    // Future enhancement: implement high-precision MPI communication
     
     return const_term * global_sum;
 }
@@ -134,6 +140,10 @@ SolverResults InverseLaplaceSolver::solve(int n, const std::vector<mpf_class>& t
     results.numerical_results.reserve(t_values.size());
     results.analytical_results.reserve(t_values.size());
     results.t_values = t_values;
+    results.mpi_processes_used = mpi_size;
+    
+    // Start timing
+    double start_time = MPI_Wtime();
     
     if (mpi_rank == 0) {
         std::cout << "Starting inverse Laplace transform calculation..." << std::endl;
@@ -156,6 +166,11 @@ SolverResults InverseLaplaceSolver::solve(int n, const std::vector<mpf_class>& t
             results.analytical_results.push_back(analytical);
         }
     }
+    
+    // End timing
+    double end_time = MPI_Wtime();
+    results.calculation_time = end_time - start_time;
+    results.time_per_point = results.calculation_time / t_values.size();
     
     if (mpi_rank == 0) {
         std::cout << " Done!" << std::endl;

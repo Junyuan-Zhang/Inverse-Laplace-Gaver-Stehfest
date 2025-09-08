@@ -14,6 +14,9 @@ struct SolverResults {
     std::vector<mpf_class> numerical_results;
     std::vector<mpf_class> analytical_results;
     double rmse_error = -1.0;
+    double calculation_time = 0.0;  // Total calculation time in seconds
+    double time_per_point = 0.0;    // Average time per t-value in seconds
+    int mpi_processes_used = 1;     // Number of MPI processes used
 };
 
 class InverseLaplaceSolver {

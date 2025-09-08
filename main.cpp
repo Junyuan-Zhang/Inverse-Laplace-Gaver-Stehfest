@@ -218,10 +218,27 @@ int main(int argc, char* argv[]) {
             std::cout << "Successfully computed " << t_values.size() << " points" << std::endl;
             std::cout << "Used " << n << " terms in the summation" << std::endl;
             std::cout << "Precision: " << precision << " decimal places" << std::endl;
-            std::cout << "Parallel efficiency: Used " << size << " MPI processes" << std::endl;
+            
+            // Performance metrics
+            std::cout << "\n=== Performance Metrics ===" << std::endl;
+            std::cout << "MPI processes used: " << results.mpi_processes_used << std::endl;
+            std::cout << "Calculation time: " << std::fixed << std::setprecision(4) 
+                      << results.calculation_time << " seconds" << std::endl;
+            std::cout << "Time per point: " << std::fixed << std::setprecision(6) 
+                      << results.time_per_point << " seconds" << std::endl;
+            std::cout << "Processing rate: " << std::fixed << std::setprecision(2) 
+                      << (1.0 / results.time_per_point) << " points/second" << std::endl;
+            
+            // MPI efficiency suggestion
+            if (results.mpi_processes_used > 1) {
+                std::cout << "Note: Currently using master-only calculation for precision." << std::endl;
+                std::cout << "      Try different process counts to find optimal performance." << std::endl;
+            } else {
+                std::cout << "Tip: Try using multiple MPI processes: mpirun -np 2 or -np 4" << std::endl;
+            }
             
             if (results.rmse_error > 0) {
-                std::cout << "RMSE Error vs Analytical: " << std::scientific 
+                std::cout << "\nRMSE Error vs Analytical: " << std::scientific 
                           << results.rmse_error << std::endl;
             }
         }
