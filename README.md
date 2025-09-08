@@ -195,16 +195,16 @@ RMSE Error vs Analytical: 1.234567e-12
 ## 🧠 Algorithm Details
 
 ### Numerical Inverse Laplace Transform
-The solver implements the Weeks method for numerical inverse Laplace transformation:
+The solver implements the Gaver-Stehfest algorithm for numerical inverse Laplace transformation:
 
 ```
 f(t) = (ln(2)/t) * Σ(i=1 to n) Vi(n,i) * F(i*ln(2)/t)
 ```
 
 Where:
-- `Vi(n,i)` are coefficient functions computed using factorials
+- `Vi(n,i)` are Stehfest coefficient functions computed using factorials
 - `F(s)` is the target function in Laplace domain
-- `n` is the number of terms in the summation
+- `n` is the number of terms in the summation (typically even)
 - `t` is the time value
 
 ### MPI Parallelization Strategy
@@ -317,14 +317,18 @@ mpicxx -std=c++17 -g -O0 -DDEBUG -I/path/to/gmp/include main.cpp solver.cpp -L/p
 ## 📚 References and Theory
 
 ### Mathematical Background
-- **Weeks Method**: Numerical inverse Laplace transformation algorithm
+- **Gaver-Stehfest Algorithm**: Numerical inverse Laplace transformation method
 - **GMP Library**: Arbitrary precision arithmetic for numerical stability
 - **MPI Standard**: Message Passing Interface for parallel computing
 
 ### Academic References
-1. Weeks, W.T. (1966). "Numerical inversion of Laplace transforms using Laguerre functions"
-2. Abate, J. & Whitt, W. (2006). "A unified framework for numerically inverting Laplace transforms"
-3. Davies, B. & Martin, B. (1979). "Numerical inversion of the Laplace transform"
+1. Gaver Jr., D.P. (1966) Observing Stochastic Processes, and Approximate Transform Inversion. Operations Research, 14, 444-459.
+   https://doi.org/10.1287/opre.14.3.444
+
+2. Stehfest, H. (1970) Algorithm 368: Numerical Inversion of Laplace Transform. Communications of the ACM, 13, 47-49.
+   https://doi.org/10.1145/361953.361969
+
+3. Abate, J. & Whitt, W. (2006). "A unified framework for numerically inverting Laplace transforms"
 
 ### Further Reading
 - [GMP Documentation](https://gmplib.org/manual/)
