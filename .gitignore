@@ -41,5 +41,10 @@ dist/
 # Log files
 *.log
 
+# IDE/Editor directories
+.vscode/
+.idea/
+*.code-workspace
+
 # Core dumps
 core.*
