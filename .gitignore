@@ -12,6 +12,11 @@ inverse_laplace_solver
 *.txt
 inverse_laplace_results.*
 
+# Sobol sensitivity analysis files
+sobol_sensitivity.cpp
+sobol_sensitivity
+sobol_sensitivity.exe
+
 # Debug builds
 *_debug
 

@@ -127,7 +127,7 @@ mpf_class InverseLaplaceSolver::inverse_laplace_transform(int n, const mpf_class
 std::vector<mpf_class> InverseLaplaceSolver::generate_t_values(double log_start, double log_end, double step) {
     std::vector<mpf_class> t_values;
     
-    for (double log_t = log_start; log_t < log_end; log_t += step) {
+    for (double log_t = log_start; log_t <= log_end + step/2; log_t += step) {
         double t_double = std::pow(10.0, log_t);
         mpf_class t_val(t_double);
         t_values.push_back(t_val);
