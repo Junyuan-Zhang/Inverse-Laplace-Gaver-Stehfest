@@ -48,6 +48,8 @@ dist/
 
 # IDE/Editor directories
 .vscode/
+
+# Project directories
 .idea/
 *.code-workspace
 

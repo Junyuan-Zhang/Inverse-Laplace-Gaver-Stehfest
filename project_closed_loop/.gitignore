@@ -1,0 +1,16 @@
+# Build artifacts
+*.o
+verification
+verification_simple
+cpp_version_check
+
+# Output files
+*.txt
+*.log
+
+# Temporary files
+*.tmp
+*~
+
+# OS files
+.DS_Store
