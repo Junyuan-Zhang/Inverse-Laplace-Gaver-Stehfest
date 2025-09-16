@@ -307,27 +307,6 @@ For improvements or extensions:
 
 This project is open source. See LICENSE file for details.
 
-## Citation
-
-If you use this code in research, please cite:
-```
-@software{inverse_laplace_sobol_2025,
-  title={Inverse Laplace Transform with Sobol Sensitivity Analysis: A High-Precision Framework for Polynomial Time-Domain Functions},
-  author={Junyuan Zhang},
-  year={2025},
-  url={https://github.com/Junyuan-Zhang/Inverse-Laplace-Gaver-Stehfest},
-  note={Implementation of MPI-accelerated Gaver-Stehfest algorithm with comprehensive Sobol sensitivity analysis}
-}
-```
-
-**For Academic Papers:**
-```
-Zhang, J. (2025). Inverse Laplace Transform with Sobol Sensitivity Analysis: 
-A High-Precision Framework for Polynomial Time-Domain Functions. 
-Software implementation. Available at: 
-https://github.com/Junyuan-Zhang/Inverse-Laplace-Gaver-Stehfest
-```
-
 ## References
 
 1. Gaver, D.P. (1966). "Observing stochastic processes, and approximate transform inversion"
