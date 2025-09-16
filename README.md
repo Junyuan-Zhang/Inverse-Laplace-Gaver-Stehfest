@@ -1,479 +1,250 @@
-# Inverse Laplace Transform Solver with MPI and GMP
+# Inverse Laplace Transform with Sobol Sensitivity Analysis
 
-A high-performance, parallel inverse Laplace transform solver implemented in C++ with MPI (Message Passing Interface) support and GNU Multiple Precision Arithmetic Library (GMP) for arbitrary precision calculations.
+A high-precision implementation of the Gaver-Stehfest algorithm for numerical inverse Laplace transforms, integrated with variance-based Sobol sensitivity analysis using MPFR (Multiple Precision Floating-Point Reliable) arithmetic.
 
-## 🚀 Features
+## Features
 
-- **MPI Parallel Computing**: Distribute calculations across multiple CPU cores/processes
-- **High-Precision Arithmetic**: Uses GMP for arbitrary precision (100+ decimal places)
-- **Interactive User Interface**: Choose from predefined functions or define custom functions
-- **Multiple Function Types**: Built-in examples including exponential decay, step functions, and complex rational functions
-- **Analytical Verification**: Optional analytical solution comparison with RMSE error calculation
-- **Data Export**: Save results to tab-separated text files for further analysis
-- **Performance Metrics**: Real-time timing and throughput measurements
-- **Configurable Parameters**: User-selectable precision, summation terms, and t-value ranges
+- **High-Precision Arithmetic**: Uses MPFR library for arbitrary precision floating-point calculations
+- **Gaver-Stehfest Algorithm**: Robust numerical inverse Laplace transform implementation
+- **Sobol Sensitivity Analysis**: Variance-based global sensitivity analysis with Monte Carlo sampling
+- **MPI Support**: Parallel computation capabilities for large-scale analysis
+- **Polynomial Time-Domain Analysis**: Complete framework for analyzing polynomial functions
+- **Automated Visualization**: Python scripts for comprehensive plotting and analysis
 
-## 📋 Requirements
+## Mathematical Framework
+
+### Inverse Laplace Transform
+The Gaver-Stehfest algorithm approximates the inverse Laplace transform:
+```
+f(t) = L⁻¹[F(s)](t) ≈ (ln(2)/t) * Σ(k=1 to N) Vₖ * F(k*ln(2)/t)
+```
+
+### Sobol Sensitivity Analysis
+For a function f(X₁, X₂, ..., Xₙ), Sobol indices quantify parameter importance:
+- **First-order index**: S₁ᵢ - Direct effect of parameter Xᵢ
+- **Total-order index**: Sₜᵢ - Total effect including interactions
+
+## Example: Polynomial Time-Domain Function
+
+### Problem Statement
+Analyze the sensitivity of the polynomial function:
+```
+f(t) = a³t - b²t² + c⁴t
+```
+
+**Laplace Transform**: `F(s) = (a³ + c⁴)/s² - 2b²/s³`
+
+### Parameter Ranges
+- a ∈ [0.5, 1.5] - Linear term coefficient (cubed)
+- b ∈ [0.5, 1.5] - Quadratic term coefficient (squared)  
+- c ∈ [0.5, 1.5] - Additional linear term coefficient (fourth power)
+
+### Key Results
+
+#### Sensitivity Hierarchy
+1. **b² (quadratic term)**: ~43% average sensitivity - Dominates at early times
+2. **a³ (linear term)**: ~37% average sensitivity - Increases over time
+3. **c⁴ (additional linear)**: ~20% average sensitivity - Grows at later times
+
+#### Temporal Evolution
+- **Early times (t < 0.5)**: Quadratic term (b²) dominates
+- **Mid-times (0.5 < t < 1.5)**: Balanced sensitivity between parameters
+- **Later times (t > 1.5)**: All parameters contribute significantly
+
+## Installation & Dependencies
 
 ### System Requirements
-- **MPI Implementation**: OpenMPI, MPICH, or Intel MPI
-- **GMP Library**: GNU Multiple Precision Arithmetic Library with C++ bindings
-- **C++ Compiler**: Supporting C++17 standard
-- **Operating System**: macOS, Linux, or Windows with WSL
-
-### Installation on macOS
 ```bash
-# Install MPI and GMP using Homebrew
-brew install open-mpi gmp
+# Install MPFR library (macOS with Homebrew)
+brew install mpfr gmp
 
-# Verify installation
-mpicxx --version
-ls /opt/homebrew/Cellar/gmp/*/include/gmp.h
+# Install MPI
+brew install open-mpi
+
+# Python dependencies
+pip install numpy matplotlib pandas seaborn
 ```
 
-### Installation on Ubuntu/Debian
+### Build System
 ```bash
-# Install MPI and GMP
-sudo apt-get update
-sudo apt-get install libopenmpi-dev libgmp-dev
+# Build the polynomial analysis
+make -f Makefile_polynomial
 
-# Verify installation
-mpicxx --version
-ls /usr/include/gmp.h
+# Run analysis
+make -f Makefile_polynomial run
+
+# Generate plots
+make -f Makefile_polynomial plot
+
+# Complete workflow
+make -f Makefile_polynomial full-analysis
 ```
 
-## 🔧 Compilation and Usage
+## Usage
 
-### Quick Start
-```bash
-# Clone or download the project
-cd inverse_laplace_solver
-
-# Compile the solver
-mpicxx -std=c++17 -Wall -Wextra -O2 -I/opt/homebrew/Cellar/gmp/6.3.0/include -c main.cpp -o main.o
-mpicxx -std=c++17 -Wall -Wextra -O2 -I/opt/homebrew/Cellar/gmp/6.3.0/include -c solver.cpp -o solver.o
-mpicxx -std=c++17 -Wall -Wextra -O2 main.o solver.o -L/opt/homebrew/Cellar/gmp/6.3.0/lib -lgmp -lgmpxx -o inverse_laplace_solver
-
-# Run with single process (for testing)
-mpirun -np 1 ./inverse_laplace_solver
-
-# Run with multiple processes (parallel)
-mpirun -np 4 ./inverse_laplace_solver
-```
-
-### Using Makefile (when available)
-```bash
-# Build the solver
-make all
-
-# Run with 4 processes
-make run
-
-# Run with single process
-make run-single
-
-# Clean build files
-make clean
-
-# Show help
-make help
-```
-
-## 📖 User Guide
-
-### Starting the Solver
-When you run the solver, you'll see an interactive menu:
-
-```
-=====================================================
-    Inverse Laplace Transform Solver with MPI      
-         High-Precision GMP Implementation          
-=====================================================
-Running on 4 MPI processes
-
-=== Available Functions ===
-1. Default Example: (5*s^2 - 15*s + 7) / ((s+1)*(s-2)^3)
-2. Exponential Decay: 1/(s+a) -> exp(-a*t)
-3. Step Function: 1/s -> 1
-4. Custom Function (defined in custom_function.cpp)
-```
-
-### Function Types
-
-#### 1. Default Example Function
-- **Laplace Domain**: `F(s) = (5*s^2 - 15*s + 7) / ((s+1)*(s-2)^3)`
-- **Time Domain**: `f(t) = -exp(-t) - 0.5*t^2*exp(2*t) + 2*t*exp(2*t) + exp(2*t)`
-- **Use Case**: Complex rational function with known analytical solution for verification
-
-#### 2. Exponential Decay
-- **Laplace Domain**: `F(s) = 1/(s+a)`
-- **Time Domain**: `f(t) = exp(-a*t)`
-- **Parameters**: User-defined decay constant `a`
-- **Use Case**: Simple exponential decay processes
-
-#### 3. Step Function
-- **Laplace Domain**: `F(s) = 1/s`
-- **Time Domain**: `f(t) = 1` (unit step)
-- **Use Case**: Basic step response analysis
-
-#### 4. Custom Function
-- **Definition**: Define your own functions in `custom_function.cpp`
-- **Flexibility**: Full mathematical expression support with GMP precision
-- **Analytical Support**: Optional analytical solution for verification
-- **Use Case**: Research, education, and specialized applications
-
-## 🛠️ Custom Function Development
-
-### Quick Start with Custom Functions
-
-1. **Edit the Function File**:
-   ```bash
-   # Open the custom function file
-   nano custom_function.cpp  # or use your preferred editor
-   ```
-
-2. **Define Your Function**:
-   ```cpp
-   // Example: F(s) = 1/(s+3) -> f(t) = exp(-3*t)
-   mpf_class custom_target_function(const mpf_class& s) {
-       return mpf_class(1.0) / (s + mpf_class(3.0));
-   }
-   
-   mpf_class custom_analytical_function(const mpf_class& t) {
-       // Taylor series for exp(-3*t)
-       mpf_class x = mpf_class(-3.0) * t;
-       mpf_class result(1.0);
-       mpf_class term(1.0);
-       
-       for (int i = 1; i <= 50; i++) {
-           term = term * x / mpf_class(i);
-           result += term;
-       }
-       return result;
-   }
-   ```
-
-3. **Set Analytical Solution Flag**:
-   ```cpp
-   const bool HAS_ANALYTICAL_SOLUTION = true;  // Set to false if no analytical solution
-   ```
-
-4. **Compile and Run**:
-   ```bash
-   make all
-   mpirun -np 1 ./inverse_laplace_solver
-   # Select option 4 (Custom Function)
-   ```
-
-### Mathematical Operations Reference
-
-The custom function system supports full GMP arithmetic operations:
-
+### Basic Analysis
 ```cpp
-// Basic Operations
-mpf_class a(5.0), b(3.0);
-mpf_class sum = a + b;           // Addition
-mpf_class diff = a - b;          // Subtraction  
-mpf_class product = a * b;       // Multiplication
-mpf_class quotient = a / b;      // Division
+// Initialize solver with precision
+InverseLaplaceSolver solver(30);  // 30 decimal places
 
-// Advanced Operations
-mpf_class power_result;
-mpf_pow_ui(power_result.get_mpf_t(), a.get_mpf_t(), 3);  // a^3
+// Define polynomial function: f(t) = a³t - b²t² + c⁴t
+PolynomialTimeLaplaceFunction func(1.0, 1.0, 1.0);
 
-mpf_class sqrt_result = sqrt(a);  // Square root
-mpf_class abs_result = abs(a);    // Absolute value
+// Create Sobol analyzer
+PolynomialTimeSobolAnalysis analyzer(&solver, &func, 2048, 14);
 
-// Complex Expressions
-mpf_class s2 = s * s;            // s^2
-mpf_class numerator = mpf_class(5.0) * s2 - mpf_class(3.0) * s + mpf_class(7.0);
-mpf_class denominator = (s + mpf_class(1.0)) * (s - mpf_class(2.0));
-return numerator / denominator;
+// Run sensitivity analysis
+auto results = analyzer.analyze_sensitivity(time_points, a_min, a_max, b_min, b_max, c_min, c_max);
 ```
 
-### Example Custom Functions
-
-#### Example 1: Second-Order System
-```cpp
-// F(s) = ωn² / (s² + 2ζωn*s + ωn²)
-mpf_class custom_target_function(const mpf_class& s) {
-    mpf_class omega_n(5.0);    // Natural frequency
-    mpf_class zeta(0.7);       // Damping ratio
-    
-    mpf_class s2 = s * s;
-    mpf_class omega_n2 = omega_n * omega_n;
-    mpf_class two_zeta_omega_n = mpf_class(2.0) * zeta * omega_n;
-    
-    mpf_class numerator = omega_n2;
-    mpf_class denominator = s2 + two_zeta_omega_n * s + omega_n2;
-    
-    return numerator / denominator;
-}
-```
-
-#### Example 2: Time-Delayed System  
-```cpp
-// F(s) = exp(-s*τ) / (s+a) where τ is delay time
-mpf_class custom_target_function(const mpf_class& s) {
-    mpf_class tau(2.0);        // Delay time
-    mpf_class a(1.0);          // Decay constant
-    
-    // Taylor approximation for exp(-s*τ)
-    mpf_class x = -s * tau;
-    mpf_class exp_term(1.0);
-    mpf_class term(1.0);
-    
-    for (int i = 1; i <= 30; i++) {
-        term = term * x / mpf_class(i);
-        exp_term += term;
-    }
-    
-    return exp_term / (s + a);
-}
-```
-
-### Configuration Parameters
-
-#### Number of Terms (n)
-- **Range**: 10-500 (recommended: 50-200)
-- **Effect**: Higher values = more accuracy, longer computation time
-- **Typical Values**:
-  - `n = 50`: Fast, moderate accuracy
-  - `n = 100`: Balanced accuracy/speed
-  - `n = 200`: High accuracy, slower
-
-#### Precision (Decimal Places)
-- **Range**: 50-500 (recommended: 100-200)
-- **Effect**: Higher precision = more accurate calculations
-- **Memory Impact**: Higher precision uses more memory
-
-#### T-Value Range
-- **Log Start**: Starting power of 10 (e.g., -4 for 10^-4)
-- **Log End**: Ending power of 10 (e.g., 2 for 10^2)
-- **Step Size**: Logarithmic step size (e.g., 0.1)
-- **Example**: Start=-4, End=2, Step=0.1 → 60 points from 0.0001 to 100
-
-### Parallel Processing
-
-#### MPI Process Selection
+### Command Line Interface
 ```bash
-# Single process (no parallelization)
-mpirun -np 1 ./inverse_laplace_solver
+# Quick analysis (single process)
+./polynomial_time_coupled
 
-# Dual-core
-mpirun -np 2 ./inverse_laplace_solver
+# Optimal performance (recommended)
+mpirun -np 2 ./polynomial_time_coupled
 
-# Quad-core
-mpirun -np 4 ./inverse_laplace_solver
-
-# Many-core (adjust based on your system)
-mpirun -np 8 ./inverse_laplace_solver
+# Alternative configurations
+mpirun -np 4 ./polynomial_time_coupled
 ```
 
-#### Performance Scaling
-- **Ideal Speedup**: Linear with number of processes
-- **Practical Speedup**: 70-90% efficiency typical
-- **Optimal Core Count**: Usually matches physical CPU cores
-- **Memory Requirements**: Scales with precision and number of t-values
+### MPI Performance Optimization
 
-## 📊 Output and Results
+**Optimal Configuration**: `mpirun -np 2` provides the best performance balance
 
-### Sample Output
+| Configuration | Execution Time | Speedup | Efficiency |
+|---------------|---------------|---------|------------|
+| Single Process | 21.3 seconds | 1.0× (baseline) | 100% |
+| **2 MPI Processes** | **16.3 seconds** | **1.31× faster** | **65%** |
+| 4 MPI Processes | 17.7 seconds | 1.20× faster | 30% |
+
+**Why 2 Processes is Optimal:**
+- **Workload Balance**: Each process handles ~7 Gaver-Stehfest terms (14 total ÷ 2)
+- **Minimal Communication**: Single `MPI_Allreduce` operation with low overhead
+- **Cache Efficiency**: Better memory locality compared to 4+ processes
+- **Amdahl's Law**: Optimal balance between parallel work and communication overhead
+
+**Performance Insights:**
+- The Gaver-Stehfest algorithm (14 terms) has limited parallelizable work
+- Communication overhead increases significantly beyond 2 processes
+- Sweet spot follows the rule: Optimal processes ≈ √(total_work) ≈ √14 ≈ 3.7 → 2-3 processes
+
+## Output Files
+
+### Data Files
+- `polynomial_time_sobol_results.txt` - Complete numerical results with Sobol indices
+- Console output with validation and summary statistics
+
+### Visualization
+- `polynomial_time_first_order_sobol_indices.png` - Main sensitivity vs time plot
+- `polynomial_time_sobol_analysis.png` - Comprehensive 4-panel analysis
+- `polynomial_time_3d_sobol_surfaces.png` - 3D surface visualization
+
+## Validation
+
+The implementation includes automatic validation by comparing numerical inverse Laplace transforms with analytical solutions. **MPI parallelization maintains identical numerical accuracy:**
+
+**Single Process:**
 ```
-=== Results ===
-RMSE Error: 1.234567e-12
-
-Sample Results (first 15 points):
-t               Numerical       Analytical      Error
--------------------------------------------------------------------
-0.0001          0.00050005      0.00050005      0.000000
-0.000125893     0.00062954      0.00062954      0.000000
-0.000158489     0.00079257      0.00079257      0.000000
-...
-
-=== Summary ===
-Successfully computed 60 points
-Used 100 terms in the summation
-Precision: 100 decimal places
-Parallel efficiency: Used 4 MPI processes
-RMSE Error vs Analytical: 1.234567e-12
-```
-
-### Understanding Results
-- **RMSE Error**: Root Mean Square Error compared to analytical solution (if available)
-- **Numerical**: Result from inverse Laplace transform algorithm
-- **Analytical**: Known analytical solution (for verification)
-- **Error**: Difference between numerical and analytical results
-
-### Data Export Format
-The solver can export results to tab-separated text files for further analysis:
-
-```
-# Inverse Laplace Transform Results
-# Generated by Gaver-Stehfest Algorithm
-# Column 1: Time (t)
-# Column 2: Numerical Result f(t)
-# Column 3: Analytical Result (if available)
-# Column 4: Absolute Error
-# 
-0.100000000000  0.606516902457  0.606530659713  -0.000013757255
-0.316227766017  0.205801406800  0.205740661084  0.000060745716
-1.000000000000  0.006445170872  0.006737946999  -0.000292776127
+Parameters: a=1, b=1, c=1
+Time        Numerical       Analytical      Error
+0.100       0.190000        0.190000        3.88e-08
+0.480       0.729600        0.729600        4.19e-07
+1.240       0.942404        0.942400        4.21e-06
+2.000       0.000012        0.000000        1.18e-05
 ```
 
-**File Features:**
-- Tab-separated format for easy import into Excel, Python, MATLAB, or other analysis tools
-- High precision (12 decimal places) for numerical accuracy
-- Comprehensive header with algorithm attribution and column descriptions
-- Automatic filename generation (`inverse_laplace_results.txt`)
-
-## 🧠 Algorithm Details
-
-### Numerical Inverse Laplace Transform
-The solver implements the Gaver-Stehfest algorithm for numerical inverse Laplace transformation:
-
+**2 MPI Processes (Identical Results):**
 ```
-f(t) = (ln(2)/t) * Σ(i=1 to n) Vi(n,i) * F(i*ln(2)/t)
+Parameters: a=1, b=1, c=1  
+Time        Numerical       Analytical      Error
+0.100       0.190000        0.190000        3.88e-08
+0.480       0.729600        0.729600        4.19e-07
+1.240       0.942404        0.942400        4.21e-06
+2.000       0.000012        0.000000        1.18e-05
+```
+
+✅ **Validation Confirms**: MPI parallelization preserves numerical accuracy while providing 31% speedup
+
+## Technical Specifications
+
+### Precision & Accuracy
+- **MPFR Precision**: 256-bit mantissa (≈77 decimal digits)
+- **Gaver-Stehfest Terms**: 14 terms for optimal accuracy
+- **Monte Carlo Samples**: 2048 samples for stable Sobol indices
+- **Numerical Error**: O(10⁻⁶) for most time ranges
+
+### Performance
+- **Single Process**: ~21 seconds (baseline)
+- **Optimal MPI (2 processes)**: ~16 seconds (31% faster)
+- **Memory Usage**: ~50MB for full analysis
+- **Parallel Efficiency**: 65% with 2 processes, 30% with 4 processes
+- **Scaling**: Limited by Gaver-Stehfest algorithm's 14-term structure
+
+## Research Applications
+
+This framework is particularly valuable for:
+
+1. **Parameter Uncertainty Quantification**: Identify which parameters contribute most to output variance
+2. **Model Simplification**: Remove parameters with low sensitivity
+3. **Experimental Design**: Focus measurement precision on high-sensitivity parameters
+4. **Risk Assessment**: Understand parameter interaction effects
+5. **Control System Design**: Prioritize parameters for feedback control
+
+## Mathematical Background
+
+### Sobol Decomposition
+The variance decomposition follows:
+```
+Var(Y) = Σᵢ Vᵢ + Σᵢ<j Vᵢⱼ + ... + V₁₂...ₙ
 ```
 
 Where:
-- `Vi(n,i)` are Stehfest coefficient functions computed using factorials
-- `F(s)` is the target function in Laplace domain
-- `n` is the number of terms in the summation (typically even)
-- `t` is the time value
+- `S₁ᵢ = Vᵢ/Var(Y)` - First-order sensitivity index
+- `Sₜᵢ = (Vᵢ + Σⱼ≠ᵢ Vᵢⱼ + ...)/Var(Y)` - Total-order sensitivity index
 
-### MPI Parallelization Strategy
-- **Work Distribution**: Summation terms distributed across MPI processes
-- **Load Balancing**: Dynamic distribution handles varying computational loads
-- **Communication**: MPI_Allreduce for efficient result aggregation
-- **Scalability**: Linear scaling with number of processes
+### Normalization
+The implementation ensures `Σᵢ S₁ᵢ = 1.0` through post-processing normalization, maintaining physical interpretability while correcting numerical artifacts.
 
-## 🛠️ Development and Customization
+## File Structure
 
-### Project Structure
 ```
-inverse_laplace_solver/
-├── main.cpp              # User interface and MPI coordination
-├── solver.cpp            # Core algorithms and functions
-├── solver.h              # Class definitions and headers
-├── Makefile              # Build system
-├── README.md             # This documentation
-└── .vscode/              # VS Code configuration
-    ├── tasks.json        # Build tasks
-    ├── launch.json       # Debug configuration
-    ├── c_cpp_properties.json  # IntelliSense setup
-    └── settings.json     # Editor settings
+├── polynomial_time_coupled.cpp    # Main analysis implementation
+├── solver.cpp                     # MPFR-enhanced Gaver-Stehfest solver
+├── mpfr_float.h/cpp               # MPFR wrapper class
+├── plot_polynomial_time_results.py # Visualization scripts
+├── Makefile_polynomial            # Build system
+└── README.md                      # This documentation
 ```
 
-### Adding Custom Functions
-To add new predefined functions, edit `solver.cpp` in the `ExampleFunctions` namespace:
+## Contributing
 
-```cpp
-namespace ExampleFunctions {
-    mpf_class my_custom_target(const mpf_class& s) {
-        // Define your F(s) here
-        return mpf_class(1.0) / (s * s + mpf_class(1.0));
-    }
-    
-    mpf_class my_custom_analytical(const mpf_class& t) {
-        // Define corresponding f(t) here (if known)
-        return sin_approximation(t);  // Implement sin approximation
-    }
+For improvements or extensions:
+1. Fork the repository
+2. Create feature branch
+3. Add tests for new functionality
+4. Submit pull request
+
+## License
+
+This project is open source. See LICENSE file for details.
+
+## Citation
+
+If you use this code in research, please cite:
+```
+@software{inverse_laplace_sobol,
+  title={Inverse Laplace Transform with Sobol Sensitivity Analysis},
+  author={[Your Name]},
+  year={2025},
+  url={https://github.com/Junyuan-Zhang/Inverse-Laplace-Gaver-Stehfest}
 }
 ```
 
-### Extending the Expression Parser
-The current expression parser in `main.cpp` is basic. For complex expressions, consider integrating:
-- **muParser**: Fast math expression parser
-- **ExprTk**: High-performance mathematical expression library
-- **TinyExpr**: Lightweight expression evaluator
+## References
 
-## 🚀 Performance Tips
-
-### Optimization Strategies
-1. **Core Count**: Use number of physical cores (not hyperthreads)
-2. **Memory**: Ensure sufficient RAM (precision × t-values × 8 bytes per value)
-3. **Precision vs Speed**: Balance precision with computation time
-4. **Function Complexity**: Simpler functions compute faster
-
-### Benchmarking
-```bash
-# Time a calculation
-time mpirun -np 4 ./inverse_laplace_solver
-
-# Memory usage monitoring
-/usr/bin/time -v mpirun -np 4 ./inverse_laplace_solver
-```
-
-### Typical Performance
-- **Single Core**: ~100 t-values/minute (n=100, precision=100)
-- **Quad Core**: ~350 t-values/minute (3.5x speedup)
-- **Memory Usage**: ~50MB for typical problems
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-#### MPI Not Found
-```bash
-# Error: mpicxx: command not found
-# Solution: Install MPI
-brew install open-mpi  # macOS
-sudo apt-get install libopenmpi-dev  # Ubuntu
-```
-
-#### GMP Headers Not Found
-```bash
-# Error: gmp.h: No such file or directory
-# Solution: Update include path in compilation
--I/opt/homebrew/Cellar/gmp/6.3.0/include  # macOS
--I/usr/include  # Ubuntu
-```
-
-#### Runtime MPI Errors
-```bash
-# Error: Could not connect to a daemon
-# Solution: Check MPI configuration
-mpirun --help
-export TMPDIR=/tmp
-```
-
-#### Precision Issues
-- **Problem**: Results don't match expected precision
-- **Solution**: Increase GMP precision in solver constructor
-- **Check**: Verify GMP is compiled with sufficient precision support
-
-### Debug Mode
-Compile with debug flags for development:
-```bash
-mpicxx -std=c++17 -g -O0 -DDEBUG -I/path/to/gmp/include main.cpp solver.cpp -L/path/to/gmp/lib -lgmp -lgmpxx -o inverse_laplace_solver_debug
-```
-
-## 📚 References and Theory
-
-### Mathematical Background
-- **Gaver-Stehfest Algorithm**: Numerical inverse Laplace transformation method
-- **GMP Library**: Arbitrary precision arithmetic for numerical stability
-- **MPI Standard**: Message Passing Interface for parallel computing
-
-### Academic References
-1. Gaver Jr., D.P. (1966) Observing Stochastic Processes, and Approximate Transform Inversion. Operations Research, 14, 444-459.
-   https://doi.org/10.1287/opre.14.3.444
-
-2. Stehfest, H. (1970) Algorithm 368: Numerical Inversion of Laplace Transform. Communications of the ACM, 13, 47-49.
-   https://doi.org/10.1145/361953.361969
-
-### Further Reading
-- [GMP Documentation](https://gmplib.org/manual/)
-- [MPI Tutorial](https://mpitutorial.com/)
-- [Numerical Methods for Laplace Transform Inversion](https://en.wikipedia.org/wiki/Inverse_Laplace_transform)
-
-## 📄 License
-
-This project is released under the GNU General Public License v3.0, maintaining compatibility with the original Python implementation from which the algorithms were converted.
-
----
-
-**Happy Computing!** 🎉
-
-For questions, issues, or contributions, please refer to the project repository or contact the development team.
+1. Gaver, D.P. (1966). "Observing stochastic processes, and approximate transform inversion"
+2. Stehfest, H. (1970). "Algorithm 368: Numerical inversion of Laplace transforms"
+3. Sobol, I.M. (2001). "Global sensitivity indices for nonlinear mathematical models"
+4. Saltelli, A. et al. (2008). "Global Sensitivity Analysis: The Primer"

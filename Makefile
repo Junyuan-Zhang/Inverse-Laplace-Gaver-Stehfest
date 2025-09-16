@@ -1,48 +1,45 @@
-# Makefile for Inverse Laplace Transform Solver with MPI and GMP
+# Inverse Laplace Transform with Sobol Sensitivity Analysis
+# Main Makefile - delegates to polynomial example
 
-CXX = mpicxx
-CXXFLAGS = -std=c++17 -Wall -Wextra -O2
-GMP_INCLUDE = /opt/homebrew/Cellar/gmp/6.3.0/include
-GMP_LIB = /opt/homebrew/Cellar/gmp/6.3.0/lib
-LIBS = -lgmp -lgmpxx
+# Default target - build polynomial analysis
+all:
+	@echo "Building Inverse Laplace Transform with Sobol Sensitivity Analysis..."
+	@echo "Using polynomial time-domain example: f(t) = a³t - b²t² + c⁴t"
+	$(MAKE) -f Makefile_polynomial
 
-# Include and library flags
-INCLUDES = -I$(GMP_INCLUDE)
-LDFLAGS = -L$(GMP_LIB) $(LIBS)
+# Run the polynomial analysis
+run:
+	$(MAKE) -f Makefile_polynomial run
 
-# Target executable
-TARGET = inverse_laplace_solver
-OBJECTS = main.o solver.o custom_function.o
+# Generate plots
+plot:
+	$(MAKE) -f Makefile_polynomial plot
 
-.PHONY: all clean run run-single run-parallel help
+# Complete workflow
+full-analysis:
+	$(MAKE) -f Makefile_polynomial full-analysis
 
-all: $(TARGET)
-
-$(TARGET): $(OBJECTS)
-	$(CXX) $(CXXFLAGS) $(OBJECTS) $(LDFLAGS) -o $@
-
-main.o: main.cpp solver.h
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
-
-solver.o: solver.cpp solver.h
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
-
-custom_function.o: custom_function.cpp custom_function.h solver.h
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
-
-run: $(TARGET)
-	mpirun -np 4 ./$(TARGET)
-
-run-single: $(TARGET)
-	mpirun -np 1 ./$(TARGET)
-
+# Clean build files
 clean:
-	rm -f $(TARGET) $(OBJECTS)
+	$(MAKE) -f Makefile_polynomial clean
 
+# Check dependencies
+check-deps:
+	$(MAKE) -f Makefile_polynomial check-deps
+
+# Help
 help:
 	@echo "Available targets:"
-	@echo "  all           - Build the solver"
-	@echo "  run           - Run with 4 MPI processes"
-	@echo "  run-single    - Run with 1 process"
-	@echo "  clean         - Remove all build files"
-	@echo "  help          - Show this help message"
+	@echo "  all          - Build the polynomial analysis program"
+	@echo "  run          - Run the analysis"
+	@echo "  plot         - Generate plots from results"
+	@echo "  full-analysis- Complete workflow: build, run, and plot"
+	@echo "  clean        - Remove build files and results"
+	@echo "  check-deps   - Check required dependencies"
+	@echo "  help         - Show this help message"
+	@echo ""
+	@echo "Example workflow:"
+	@echo "  make check-deps    # Verify dependencies"
+	@echo "  make full-analysis # Complete analysis"
+
+.PHONY: all run plot full-analysis clean check-deps help

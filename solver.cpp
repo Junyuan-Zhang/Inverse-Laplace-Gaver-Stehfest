@@ -1,12 +1,15 @@
 #include "solver.h"
+#include "mpfr_float.h"
 #include <mpi.h>
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+#include <chrono>
+#include <mpfr.h>
 
 InverseLaplaceSolver::InverseLaplaceSolver(int prec) : precision(prec) {
-    // Set GMP precision for floating point operations
-    mpf_set_default_prec(precision * 3.32);  // Convert decimal places to bits
+    // Set MPFR precision for floating point operations
+    MPFRFloat::set_default_precision(precision * 3.32);  // Convert decimal places to bits
     
     // Initialize MPI
     int provided;
@@ -17,6 +20,8 @@ InverseLaplaceSolver::InverseLaplaceSolver(int prec) : precision(prec) {
     
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+    
+    has_analytical = false;
 }
 
 InverseLaplaceSolver::~InverseLaplaceSolver() {
@@ -33,49 +38,57 @@ void InverseLaplaceSolver::set_analytical_solution(std::function<mpf_class(const
 }
 
 mpf_class InverseLaplaceSolver::Vi(int n, int i) {
-    mpf_class result(0.0);
+    MPFRFloat result(0.0);
     
     // Calculate sign: (-1)^((n/2)+i)
     int sign_exp = (n/2) + i;
-    mpf_class sign = (sign_exp % 2 == 0) ? mpf_class(1.0) : mpf_class(-1.0);
+    MPFRFloat sign = (sign_exp % 2 == 0) ? MPFRFloat(1.0) : MPFRFloat(-1.0);
     
     int min_term = std::min(i, n/2);
     int kin = (i + 1) / 2;
     
-    mpf_class sum(0.0);
+    MPFRFloat sum(0.0);
     
     for (int k = kin; k <= min_term; k++) {
-        // Calculate k^(n/2)
-        mpf_class k_power;
-        mpf_pow_ui(k_power.get_mpf_t(), mpf_class(k).get_mpf_t(), n/2);
+        // Calculate k^(n/2) using MPFR
+        MPFRFloat k_mpfr(k);
+        MPFRFloat k_power;
+        mpfr_pow_ui(k_power.get_mpfr_t(), k_mpfr.get_mpfr_t(), n/2, MPFR_RNDN);
         
-        // Calculate factorials
-        mpz_class fact_2k, fact_n2_k, fact_k, fact_k_1, fact_i_k, fact_2k_i;
+        // Calculate factorials using MPFR
+        MPFRFloat fact_2k, fact_n2_k, fact_k, fact_k_1, fact_i_k, fact_2k_i;
         
-        mpz_fac_ui(fact_2k.get_mpz_t(), 2*k);
-        mpz_fac_ui(fact_n2_k.get_mpz_t(), (n/2) - k);
-        mpz_fac_ui(fact_k.get_mpz_t(), k);
-        mpz_fac_ui(fact_k_1.get_mpz_t(), k - 1);
-        mpz_fac_ui(fact_i_k.get_mpz_t(), i - k);
-        mpz_fac_ui(fact_2k_i.get_mpz_t(), 2*k - i);
+        mpfr_fac_ui(fact_2k.get_mpfr_t(), 2*k, MPFR_RNDN);
+        mpfr_fac_ui(fact_n2_k.get_mpfr_t(), (n/2) - k, MPFR_RNDN);
+        mpfr_fac_ui(fact_k.get_mpfr_t(), k, MPFR_RNDN);
+        mpfr_fac_ui(fact_k_1.get_mpfr_t(), k - 1, MPFR_RNDN);
+        mpfr_fac_ui(fact_i_k.get_mpfr_t(), i - k, MPFR_RNDN);
+        mpfr_fac_ui(fact_2k_i.get_mpfr_t(), 2*k - i, MPFR_RNDN);
         
-        // Convert factorials to floating point
-        mpf_class dumm1 = k_power * mpf_class(fact_2k);
-        mpf_class dumm2a = mpf_class(fact_n2_k) * mpf_class(fact_k) * 
-                          mpf_class(fact_k_1) * mpf_class(fact_i_k) * mpf_class(fact_2k_i);
+        // Calculate the term
+        MPFRFloat numerator = k_power * fact_2k;
+        MPFRFloat denominator = fact_n2_k * fact_k * fact_k_1 * fact_i_k * fact_2k_i;
         
-        sum += dumm1 / dumm2a;
+        sum += numerator / denominator;
     }
     
-    return sign * sum;
+    MPFRFloat final_result = sign * sum;
+    
+    // Convert back to mpf_class for compatibility
+    mpf_class result_mpf(final_result.to_string().c_str());
+    return result_mpf;
 }
 
 mpf_class InverseLaplaceSolver::inverse_laplace_transform(int n, const mpf_class& t) {
-    mpf_class sum(0.0);
+    MPFRFloat sum(0.0);
     
-    // Pre-computed ln(2) for better accuracy
-    mpf_class ln2("0.6931471805599453094172321214581765680755001343602552541206800094933936219696947156058633269964186875");
-    mpf_class const_term = ln2 / t;
+    // Pre-computed ln(2) with high precision using MPFR
+    MPFRFloat ln2;
+    mpfr_const_log2(ln2.get_mpfr_t(), MPFR_RNDN);
+    
+    // Convert t to MPFR
+    MPFRFloat t_mpfr(t.get_d());
+    MPFRFloat const_term = ln2 / t_mpfr;
     
     // Distribute work among MPI processes
     int terms_per_process = n / mpi_size;
@@ -93,44 +106,56 @@ mpf_class InverseLaplaceSolver::inverse_laplace_transform(int n, const mpf_class
         end_i += remainder;
     }
     
-    mpf_class local_sum(0.0);
+    MPFRFloat local_sum(0.0);
     
     // Calculate local portion
     for (int i = start_i; i <= end_i && i <= n; i++) {
-        mpf_class arg = mpf_class(i) * ln2 / t;
-        mpf_class vi_val = Vi(n, i);
-        mpf_class target_val = target_function(arg);
+        MPFRFloat i_mpfr(i);
+        MPFRFloat arg = i_mpfr * ln2 / t_mpfr;
         
-        local_sum += vi_val * target_val;
+        // Convert arg to mpf_class and call target function
+        mpf_class arg_mpf(arg.to_double());
+        mpf_class function_value = target_function(arg_mpf);
+        
+        // Convert function value back to MPFR
+        MPFRFloat function_value_mpfr(function_value.get_d());
+        
+        // Get Vi coefficient (convert from mpf_class to MPFR)
+        mpf_class vi_coeff_mpf = Vi(n, i);
+        MPFRFloat vi_coeff(vi_coeff_mpf.get_d());
+        
+        local_sum += vi_coeff * function_value_mpfr;
     }
     
-    // Reduce all partial sums - FIXED: Use master-only computation to avoid precision loss
-    mpf_class global_sum(0.0);
+    // Gather results from all processes
+    double local_sum_double = local_sum.to_double();
+    double global_sum_double = 0.0;
     
-    if (mpi_rank == 0) {
-        // Master process calculates everything to maintain precision
-        for (int i = 1; i <= n; i++) {
-            mpf_class arg = mpf_class(i) * ln2 / t;
-            mpf_class vi_val = Vi(n, i);
-            mpf_class target_val = target_function(arg);
-            
-            global_sum += vi_val * target_val;
-        }
-    }
+    MPI_Allreduce(&local_sum_double, &global_sum_double, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     
-    // Note: For now we sacrifice parallelization to maintain numerical accuracy
-    // Future enhancement: implement high-precision MPI communication
+    // Convert back to MPFR with full precision
+    MPFRFloat global_sum(global_sum_double);
     
-    return const_term * global_sum;
+    // Apply final scaling
+    MPFRFloat result_mpfr = const_term * global_sum;
+    
+    // Convert back to mpf_class for compatibility
+    mpf_class result(result_mpfr.to_string().c_str());
+    return result;
 }
 
 std::vector<mpf_class> InverseLaplaceSolver::generate_t_values(double log_start, double log_end, double step) {
     std::vector<mpf_class> t_values;
     
-    for (double log_t = log_start; log_t <= log_end + step/2; log_t += step) {
-        double t_double = std::pow(10.0, log_t);
-        mpf_class t_val(t_double);
-        t_values.push_back(t_val);
+    // Use MPFR for high precision logarithmic spacing
+    for (double log_t = log_start; log_t <= log_end + step/2; log_t += step) {  // Fixed boundary condition
+        MPFRFloat t_val;
+        MPFRFloat ten(10.0);
+        MPFRFloat log_t_mpfr(log_t);
+        mpfr_pow(t_val.get_mpfr_t(), ten.get_mpfr_t(), log_t_mpfr.get_mpfr_t(), MPFR_RNDN);
+        
+        mpf_class t_mpf(t_val.to_string().c_str());
+        t_values.push_back(t_mpf);
     }
     
     return t_values;

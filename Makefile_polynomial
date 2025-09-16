@@ -1,0 +1,77 @@
+# Makefile for Polynomial Time-Domain Inverse Laplace Transform & Sobol Sensitivity Analysis
+
+# Compiler settings
+CXX = /opt/homebrew/bin/mpic++
+CXXFLAGS = -std=c++17 -O3 -Wall -Wextra
+INCLUDES = -I/opt/homebrew/include -I/opt/homebrew/opt/mpfr/include
+LIBS = -L/opt/homebrew/lib -L/opt/homebrew/opt/mpfr/lib -lmpfr -lgmp -lmpi
+
+# Source files
+POLYNOMIAL_SRC = polynomial_time_coupled.cpp
+SOLVER_SRC = solver.cpp
+MPFR_FLOAT_SRC = mpfr_float.cpp
+SOLVER_HDR = solver.h
+MPFR_FLOAT_HDR = mpfr_float.h
+
+# Object files
+POLYNOMIAL_OBJ = polynomial_time_coupled.o
+SOLVER_OBJ = solver.o
+MPFR_FLOAT_OBJ = mpfr_float.o
+
+# Executable
+POLYNOMIAL_EXE = polynomial_time_coupled
+
+# Default target
+all: $(POLYNOMIAL_EXE)
+
+# Build the polynomial time-domain analysis executable
+$(POLYNOMIAL_EXE): $(SOLVER_OBJ) $(POLYNOMIAL_OBJ) $(MPFR_FLOAT_OBJ)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+
+# Build solver object file
+$(SOLVER_OBJ): $(SOLVER_SRC) $(SOLVER_HDR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+# Build polynomial time-domain analysis object file
+$(POLYNOMIAL_OBJ): $(POLYNOMIAL_SRC) $(SOLVER_HDR) $(MPFR_FLOAT_HDR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+# Build MPFR float object file
+$(MPFR_FLOAT_OBJ): $(MPFR_FLOAT_SRC) $(MPFR_FLOAT_HDR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+# Clean build files
+clean:
+	rm -f *.o $(POLYNOMIAL_EXE) polynomial_time_sobol_results.txt polynomial_time_*.png
+
+# Run the polynomial time-domain analysis
+run: $(POLYNOMIAL_EXE)
+	./$(POLYNOMIAL_EXE)
+
+# Generate plots
+plot: polynomial_time_sobol_results.txt
+	python3 plot_polynomial_time_results.py
+
+# Check dependencies
+check-deps:
+	@echo "Checking dependencies..."
+	@which mpic++ || echo "Error: MPI compiler not found"
+	@pkg-config --exists mpfr && echo "MPFR: OK" || echo "Error: MPFR not found"
+	@python3 -c "import numpy, matplotlib, pandas, seaborn; print('Python packages: OK')" 2>/dev/null || echo "Error: Missing Python packages"
+
+# Full analysis workflow
+full-analysis: clean all run plot
+	@echo "Full polynomial time-domain analysis completed!"
+
+# Help target
+help:
+	@echo "Available targets:"
+	@echo "  all          - Build the polynomial time-domain analysis program"
+	@echo "  run          - Run the analysis"
+	@echo "  plot         - Generate plots from results"
+	@echo "  full-analysis- Complete workflow: build, run, and plot"
+	@echo "  clean        - Remove build files and results"
+	@echo "  check-deps   - Check required dependencies"
+	@echo "  help         - Show this help message"
+
+.PHONY: all clean run plot check-deps full-analysis help
